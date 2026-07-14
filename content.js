@@ -165,8 +165,8 @@
         });
     }
 
-    // === 6. Добавление кнопки "Открыть в CRM" ===
-    function addCrmButtons() {
+    // === 6. Добавление кнопки для открытия ссылки ===
+    function addLinkButtons() {
         const containers = document.querySelectorAll(`
             .flex-1.min-w-0,
             .group.flex.items-start.gap-3 .flex-1.min-w-0,
@@ -174,15 +174,16 @@
             .space-y-1 .flex-1.min-w-0
         `);
         containers.forEach(container => {
+            // Если уже есть кнопка external-link, пропускаем
             if (container.querySelector('.lucide-external-link')) return;
             const textElement = container.querySelector('p, span:not(.sr-only)');
             if (!textElement) return;
             const text = textElement.textContent.trim();
-            if (!text || text.length < 3) return;
+            if (!text) return;
 
-            const isEmail = text.includes('@');
-            const isId = /^[a-zA-Z0-9_-]+$/.test(text) && text.length > 8;
-            if (!isEmail && !isId) return;
+            // Проверяем, является ли текст URL
+            const isUrl = text.startsWith('http://') || text.startsWith('https://');
+            if (!isUrl) return;
 
             let parent = container.closest('.group.flex.items-start.gap-3, .flex.items-start.gap-3, .flex');
             if (!parent) {
@@ -191,42 +192,36 @@
             }
             if (!parent || parent.querySelector('.lucide-external-link')) return;
 
-            const crmButton = document.createElement('button');
-            crmButton.className = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-6 w-6 shrink-0 self-start';
+            const linkButton = document.createElement('button');
+            linkButton.className = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-6 w-6 shrink-0 self-start';
             if (parent.matches('.flex.items-start.gap-1')) {
-                crmButton.classList.add('mt-1');
+                linkButton.classList.add('mt-1');
             }
-            crmButton.setAttribute('title', 'Открыть в CRM');
-            crmButton.innerHTML = `
+            linkButton.setAttribute('title', 'Открыть ссылку');
+            linkButton.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link h-3.5 w-3.5">
                     <path d="M15 3h6v6"></path>
                     <path d="M10 14 21 3"></path>
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                 </svg>
             `;
-            crmButton.addEventListener('click', function(e) {
+            linkButton.addEventListener('click', function(e) {
                 e.stopPropagation();
-                let url;
-                if (isEmail) {
-                    url = 'https://admin.moneyman.ru/crm/borrower?email=' + encodeURIComponent(text);
-                } else {
-                    url = 'https://admin.moneyman.ru/crm/borrower/' + encodeURIComponent(text);
-                }
-                window.open(url, '_blank');
+                window.open(text, '_blank');
             });
 
             const iconContainer = parent.querySelector('.flex.items-center.gap-1, .flex.items-start.gap-1, .flex.items-start.gap-3');
             if (iconContainer) {
-                iconContainer.appendChild(crmButton);
+                iconContainer.appendChild(linkButton);
             } else {
                 const lastIcon = parent.querySelector('.lucide-pencil, .lucide-ellipsis-vertical, .lucide-search');
                 if (lastIcon) {
-                    lastIcon.parentNode.insertBefore(crmButton, lastIcon);
+                    lastIcon.parentNode.insertBefore(linkButton, lastIcon);
                 } else {
-                    parent.appendChild(crmButton);
+                    parent.appendChild(linkButton);
                 }
             }
-            parent.dataset.crmAdded = "1";
+            parent.dataset.linkAdded = "1";
         });
     }
 
@@ -237,7 +232,7 @@
         enableMultiMenu();
         fixWrapping();
         fixRadioButtons();
-        addCrmButtons(); // только CRM, копирование удалено
+        addLinkButtons(); // изменённая функция
     }
 
     // Запуск
