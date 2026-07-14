@@ -105,15 +105,10 @@
         }, true);
     }
 
-    // === 4. Перенос длинных текстов (расширенная версия) ===
+    // === 4. Перенос длинных текстов ===
     function fixWrapping() {
-        // 1. Все элементы с классом break-all (включая ID, email)
         document.querySelectorAll('.break-all:not([data-wrap-fixed])').forEach(applyWrapStyles);
-
-        // 2. Все абзацы внутри блоков .flex-1.min-w-0 (заметки, контакты)
         document.querySelectorAll('.flex-1.min-w-0 p.text-sm:not([data-wrap-fixed])').forEach(applyWrapStyles);
-
-        // 3. Дополнительно: любые длинные тексты в панелях (если вылезают)
         document.querySelectorAll('.p-4 .text-sm, .space-y-2 .text-sm, .group .text-sm').forEach(el => {
             if (el.scrollWidth > el.clientWidth) {
                 applyWrapStyles(el);
@@ -170,6 +165,130 @@
         });
     }
 
+    // === 6. Добавление кнопки копирования ===
+    function addCopyButtons() {
+        const containers = document.querySelectorAll(`
+            .flex-1.min-w-0,
+            .group.flex.items-start.gap-3 .flex-1.min-w-0,
+            .flex.items-start.gap-3 .flex-1.min-w-0,
+            .space-y-1 .flex-1.min-w-0
+        `);
+        containers.forEach(container => {
+            if (container.querySelector('.lucide-copy')) return;
+            const textElement = container.querySelector('p, span:not(.sr-only)');
+            if (!textElement) return;
+            const textToCopy = textElement.textContent.trim();
+            if (!textToCopy || textToCopy.length < 2) return;
+
+            let parent = container.closest('.group.flex.items-start.gap-3, .flex.items-start.gap-3, .flex');
+            if (!parent) {
+                const possibleParent = container.closest('.space-y-1')?.querySelector('div:has(> .flex-1.min-w-0)');
+                if (possibleParent) parent = possibleParent;
+            }
+            if (!parent || parent.querySelector('.lucide-copy')) return;
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-5 w-5 shrink-0 self-start';
+            copyButton.setAttribute('title', 'Копировать');
+            copyButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy h-3 w-3">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                </svg>
+            `;
+            copyButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalHtml = this.innerHTML;
+                    this.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check h-3 w-3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    `;
+                    setTimeout(() => { this.innerHTML = originalHtml; }, 1500);
+                }).catch(err => console.warn('Копирование не удалось:', err));
+            });
+
+            const iconContainer = parent.querySelector('.flex.items-center.gap-1, .flex.items-start.gap-1, .flex.items-start.gap-3');
+            if (iconContainer) {
+                iconContainer.appendChild(copyButton);
+            } else {
+                const lastIcon = parent.querySelector('.lucide-pencil, .lucide-ellipsis-vertical, .lucide-search, .lucide-external-link');
+                if (lastIcon) {
+                    lastIcon.parentNode.insertBefore(copyButton, lastIcon);
+                } else {
+                    parent.appendChild(copyButton);
+                }
+            }
+            parent.dataset.copyAdded = "1";
+        });
+    }
+
+    // === 7. Добавление кнопки "Открыть в CRM" ===
+    function addCrmButtons() {
+        const containers = document.querySelectorAll(`
+            .flex-1.min-w-0,
+            .group.flex.items-start.gap-3 .flex-1.min-w-0,
+            .flex.items-start.gap-3 .flex-1.min-w-0,
+            .space-y-1 .flex-1.min-w-0
+        `);
+        containers.forEach(container => {
+            if (container.querySelector('.lucide-external-link')) return;
+            const textElement = container.querySelector('p, span:not(.sr-only)');
+            if (!textElement) return;
+            const text = textElement.textContent.trim();
+            if (!text || text.length < 3) return;
+
+            const isEmail = text.includes('@');
+            const isId = /^[a-zA-Z0-9_-]+$/.test(text) && text.length > 8;
+            if (!isEmail && !isId) return;
+
+            let parent = container.closest('.group.flex.items-start.gap-3, .flex.items-start.gap-3, .flex');
+            if (!parent) {
+                const possibleParent = container.closest('.space-y-1')?.querySelector('div:has(> .flex-1.min-w-0)');
+                if (possibleParent) parent = possibleParent;
+            }
+            if (!parent || parent.querySelector('.lucide-external-link')) return;
+
+            const crmButton = document.createElement('button');
+            crmButton.className = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-6 w-6 shrink-0 self-start';
+            if (parent.matches('.flex.items-start.gap-1')) {
+                crmButton.classList.add('mt-1');
+            }
+            crmButton.setAttribute('title', 'Открыть в CRM');
+            crmButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link h-3.5 w-3.5">
+                    <path d="M15 3h6v6"></path>
+                    <path d="M10 14 21 3"></path>
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                </svg>
+            `;
+            crmButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                let url;
+                if (isEmail) {
+                    url = 'https://admin.moneyman.ru/crm/borrower?email=' + encodeURIComponent(text);
+                } else {
+                    url = 'https://admin.moneyman.ru/crm/borrower/' + encodeURIComponent(text);
+                }
+                window.open(url, '_blank');
+            });
+
+            const iconContainer = parent.querySelector('.flex.items-center.gap-1, .flex.items-start.gap-1, .flex.items-start.gap-3');
+            if (iconContainer) {
+                iconContainer.appendChild(crmButton);
+            } else {
+                const lastIcon = parent.querySelector('.lucide-pencil, .lucide-ellipsis-vertical, .lucide-search');
+                if (lastIcon) {
+                    lastIcon.parentNode.insertBefore(crmButton, lastIcon);
+                } else {
+                    parent.appendChild(crmButton);
+                }
+            }
+            parent.dataset.crmAdded = "1";
+        });
+    }
+
     // === Основная функция ===
     function fix() {
         fixMessages();
@@ -177,6 +296,8 @@
         enableMultiMenu();
         fixWrapping();
         fixRadioButtons();
+        addCopyButtons();
+        addCrmButtons();
     }
 
     // Запуск
