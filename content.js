@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    function fix() {
-        // 1. Стили для текстовых сообщений
+    // === 1. Стилизация сообщений ===
+    function fixMessages() {
         document.querySelectorAll('.text-sm.px-1.text-right').forEach(text => {
             if (text.dataset.fixed) return;
             text.dataset.fixed = "1";
@@ -24,8 +24,10 @@
                 text.style.setProperty(prop, value, 'important');
             }
         });
+    }
 
-        // 2. Обработка вложений (изображения и файлы)
+    // === 2. Обработка вложений (изображения и файлы) ===
+    function fixAttachments() {
         document.querySelectorAll('.justify-end .max-w-\\[70\\%\\]').forEach(container => {
             const textBlock = container.querySelector('.text-sm.px-1[data-fixed]');
             if (!textBlock) return;
@@ -33,7 +35,6 @@
             const parent = textBlock.parentNode;
             if (!parent) return;
 
-            // Ищем любое вложение (с картинкой или кнопкой)
             let attachment = null;
             for (const child of parent.children) {
                 if (child === textBlock) continue;
@@ -42,10 +43,8 @@
                     break;
                 }
             }
-
             if (!attachment) return;
 
-            // Добавляем стили для вложения
             if (!attachment.dataset.attachmentFixed) {
                 attachment.dataset.attachmentFixed = "1";
                 attachment.style.setProperty('border', '2px solid var(--border, #e5e7eb)', 'important');
@@ -63,17 +62,63 @@
                 }
             }
 
-            // Перемещаем вложение ПОСЛЕ текста
             if (textBlock.nextElementSibling !== attachment) {
                 parent.insertBefore(attachment, textBlock.nextSibling);
             }
         });
     }
 
-    // Запускаем скрипт
+    // === 3. Мульти-меню (одновременное открытие нескольких панелей) ===
+    function enableMultiMenu() {
+        document.addEventListener('click', function(e) {
+            const button = e.target.closest('button[data-state]');
+            if (!button) return;
+
+            const openButtons = [];
+            document.querySelectorAll('button[data-state="open"]').forEach(b => {
+                if (b !== button) {
+                    openButtons.push(b);
+                }
+            });
+
+            setTimeout(() => {
+                openButtons.forEach(b => {
+                    if (b.getAttribute('data-state') === 'closed') {
+                        b.setAttribute('data-state', 'open');
+                        if (b.hasAttribute('aria-expanded')) {
+                            b.setAttribute('aria-expanded', 'true');
+                        }
+                    }
+                });
+            }, 0);
+        }, true);
+    }
+
+    // === 4. Перенос длинных ID ===
+    function fixWrapping() {
+        document.querySelectorAll('.break-all.text-left.font-mono.text-xs').forEach(el => {
+            if (el.dataset.wrapFixed) return;
+            el.dataset.wrapFixed = "1";
+            el.style.setProperty('word-break', 'break-all', 'important');
+            el.style.setProperty('overflow-wrap', 'break-word', 'important');
+            el.style.setProperty('white-space', 'normal', 'important');
+            el.style.setProperty('display', 'inline-block', 'important');
+            el.style.setProperty('max-width', '100%', 'important');
+        });
+    }
+
+    // === Основная функция ===
+    function fix() {
+        fixMessages();
+        fixAttachments();
+        enableMultiMenu();
+        fixWrapping();
+    }
+
+    // Запуск
     fix();
 
-    // Наблюдаем за новыми сообщениями
+    // Наблюдение за новыми элементами
     new MutationObserver(fix).observe(document.body, {
         childList: true,
         subtree: true
