@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "MoneyMan Chat Enhancer",
-  "version": "1.0.4",
-  "description": "Улучшает чат оператора: стилизация, мульти-меню, сохранение выбора, перенос, кнопки копирования и CRM",
+  "version": "1.0.5",
+  "description": "Улучшает чат оператора: стилизация, мульти-меню, сохранение выбора, перенос, кнопка CRM",
   "permissions": [],
   "update_url": "https://raw.githubusercontent.com/testkonstantinmishchenko-spec/moneyman-chat-enhancer/main/updates.xml",
   "content_scripts": [
