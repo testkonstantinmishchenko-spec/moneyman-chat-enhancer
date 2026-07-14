@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "MoneyMan Chat Fix",
+  "version": "1.0",
+  "description": "Исправляет отображение сообщений в чате MoneyMan",
+  "permissions": [],
+  "content_scripts": [
+    {
+      "matches": ["https://chat.moneyman.ru/operator/chat/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
