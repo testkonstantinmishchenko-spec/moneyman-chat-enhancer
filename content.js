@@ -107,12 +107,62 @@
         });
     }
 
+    // === 5. Фиксация выбора радиокнопок ===
+    function fixRadioButtons() {
+        document.querySelectorAll('[role="group"]').forEach(group => {
+            let key = group.dataset.radioKey;
+            if (!key) {
+                const label = group.closest('.flex, .space-y-2')?.querySelector('h4, .text-xs.font-medium');
+                key = label ? label.textContent.trim() : 'radio-group-' + Array.from(document.querySelectorAll('[role="group"]')).indexOf(group);
+                group.dataset.radioKey = key;
+            }
+
+            const buttons = group.querySelectorAll('button[role="radio"]');
+            if (buttons.length === 0) return;
+
+            function saveSelected(selectedButton) {
+                const value = selectedButton.textContent.trim();
+                localStorage.setItem('radio-selection-' + key, value);
+            }
+
+            function restoreSelection() {
+                const saved = localStorage.getItem('radio-selection-' + key);
+                if (!saved) return;
+                buttons.forEach(btn => {
+                    if (btn.textContent.trim() === saved) {
+                        if (btn.getAttribute('data-state') !== 'on') {
+                            btn.click();
+                        }
+                    }
+                });
+            }
+
+            buttons.forEach(btn => {
+                if (btn.dataset.radioFixed) return;
+                btn.dataset.radioFixed = "1";
+                btn.addEventListener('click', function() {
+                    setTimeout(() => {
+                        if (this.getAttribute('data-state') === 'on') {
+                            saveSelected(this);
+                        }
+                    }, 0);
+                });
+            });
+
+            if (!group.dataset.restored) {
+                group.dataset.restored = "1";
+                restoreSelection();
+            }
+        });
+    }
+
     // === Основная функция ===
     function fix() {
         fixMessages();
         fixAttachments();
         enableMultiMenu();
         fixWrapping();
+        fixRadioButtons();
     }
 
     // Запуск
