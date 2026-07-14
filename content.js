@@ -1,6 +1,17 @@
 (function () {
     'use strict';
 
+    // === Вспомогательная функция для применения стилей переноса ===
+    function applyWrapStyles(el) {
+        if (el.dataset.wrapFixed) return;
+        el.dataset.wrapFixed = "1";
+        el.style.setProperty('word-break', 'break-all', 'important');
+        el.style.setProperty('overflow-wrap', 'break-word', 'important');
+        el.style.setProperty('white-space', 'normal', 'important');
+        el.style.setProperty('display', 'inline-block', 'important');
+        el.style.setProperty('max-width', '100%', 'important');
+    }
+
     // === 1. Стилизация сообщений ===
     function fixMessages() {
         document.querySelectorAll('.text-sm.px-1.text-right').forEach(text => {
@@ -94,16 +105,19 @@
         }, true);
     }
 
-    // === 4. Перенос длинных ID ===
+    // === 4. Перенос длинных текстов (расширенная версия) ===
     function fixWrapping() {
-        document.querySelectorAll('.break-all.text-left.font-mono.text-xs').forEach(el => {
-            if (el.dataset.wrapFixed) return;
-            el.dataset.wrapFixed = "1";
-            el.style.setProperty('word-break', 'break-all', 'important');
-            el.style.setProperty('overflow-wrap', 'break-word', 'important');
-            el.style.setProperty('white-space', 'normal', 'important');
-            el.style.setProperty('display', 'inline-block', 'important');
-            el.style.setProperty('max-width', '100%', 'important');
+        // 1. Все элементы с классом break-all (включая ID, email)
+        document.querySelectorAll('.break-all:not([data-wrap-fixed])').forEach(applyWrapStyles);
+
+        // 2. Все абзацы внутри блоков .flex-1.min-w-0 (заметки, контакты)
+        document.querySelectorAll('.flex-1.min-w-0 p.text-sm:not([data-wrap-fixed])').forEach(applyWrapStyles);
+
+        // 3. Дополнительно: любые длинные тексты в панелях (если вылезают)
+        document.querySelectorAll('.p-4 .text-sm, .space-y-2 .text-sm, .group .text-sm').forEach(el => {
+            if (el.scrollWidth > el.clientWidth) {
+                applyWrapStyles(el);
+            }
         });
     }
 
